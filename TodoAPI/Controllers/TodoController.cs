@@ -24,112 +24,198 @@ namespace TodoAPI.Controllers
 
         // GET: api/Todo
         [HttpGet]
-        public async Task<ActionResult<TodoListResponse>> GetTodos()
+        public async Task<ActionResult> GetTodos()
         {
-            List<Todo> todoList = await _context.Todos.ToListAsync();
-            var response = new TodoListResponse
+            TodoListResponse response;
+            try
             {
-                Status = HttpStatusCode.OK,
-                Message = "Got list of todos successfully",
-                Response = todoList
-            };
-            return response;
+                List<Todo> todoList = await _context.Todos.ToListAsync();
+
+                if (todoList.Count == 0)
+                {
+                    response = new TodoListResponse
+                    {
+                        Status = HttpStatusCode.NotFound,
+                        Message = "No todos found"
+                    };
+                    return NotFound(response);
+                }
+
+                response = new TodoListResponse
+                {
+                    Status = HttpStatusCode.OK,
+                    Message = "Got list of todos successfully",
+                    Response = todoList
+                };
+                return Ok(response);
+            }
+            catch(Exception ex)
+            {
+                response = new TodoListResponse
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Message = ex.Message
+                };
+                return BadRequest(response);
+            }
         }
 
         // GET: api/Todo/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TodoResponse>> GetTodo(int id)
+        public async Task<ActionResult> GetTodo(int id)
         {
-            var todo = await _context.Todos.FindAsync(id);
+            TodoResponse response;
+            try 
+            { 
+                var todo = await _context.Todos.FindAsync(id);
 
-            if (todo == null)
-            {
-                return NotFound();
+                if (todo == null)
+                {
+                    response = new TodoResponse
+                    {
+                        Status = HttpStatusCode.NotFound,
+                        Message = "No todo found at the entered Id"
+                    };
+                    return NotFound(response);
+                }
+
+                response = new TodoResponse
+                {
+                    Status = HttpStatusCode.OK,
+                    Message = "Got todo successfully",
+                    Response = todo
+                };
+                return Ok(response);
             }
-
-            var response = new TodoResponse
+            catch (Exception ex)
             {
-                Status = HttpStatusCode.OK,
-                Message = "Got todo successfully",
-                Response = todo
-            };
-            return response;
+                response = new TodoResponse
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Message = ex.Message
+                };
+                return BadRequest(response);
+            }
         }
 
         // PUT: api/Todo/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<ActionResult<TodoResponse>> PutTodo(int id, Todo todo)
+        public async Task<ActionResult> PutTodo(int id, Todo todo)
         {
-            if (id != todo.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(todo).State = EntityState.Modified;
-
+            TodoResponse response;
             try
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!TodoExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+                _context.Entry(todo).State = EntityState.Modified;
 
-            var response = new TodoResponse
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!TodoExists(id))
+                    {
+                        response = new TodoResponse
+                        {
+                            Status = HttpStatusCode.NotFound,
+                            Message = "No todo found at the entered Id"
+                        };
+                        return NotFound(response);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
+                response = new TodoResponse
+                {
+                    Status = HttpStatusCode.OK,
+                    Message = "Updated todo successfully",
+                    Response = todo
+                };
+                return Ok(response);
+            }
+            catch (Exception ex)
             {
-                Status = HttpStatusCode.OK,
-                Message = "Updated todo successfully",
-                Response = todo
-            };
-            return response;
+                response = new TodoResponse
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Message = ex.Message
+                };
+                return BadRequest(response);
+            }
         }
 
         // POST: api/Todo
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<TodoResponse>> PostTodo(Todo todo)
+        public async Task<ActionResult> PostTodo(Todo todo)
         {
-            _context.Todos.Add(todo);
-            await _context.SaveChangesAsync();
+            TodoResponse response;
+            try
+            { 
+                _context.Todos.Add(todo);
+                await _context.SaveChangesAsync();
 
-            var response = new TodoResponse
+                response = new TodoResponse
+                {
+                    Status = HttpStatusCode.Created,
+                    Message = "Created todo successfully",
+                    Response = todo
+                };
+                return new CreatedResult("TodoDB",response);
+            }
+            catch (Exception ex)
             {
-                Status = HttpStatusCode.Created,
-                Message = "Created todo successfully",
-                Response = todo
-            };
-            return response;
+                response = new TodoResponse
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Message = ex.Message
+                };
+                return BadRequest(response);
+            }
         }
 
         // DELETE: api/Todo/5
         [HttpDelete("{id}")]
-        public async Task<ActionResult<TodoResponse>> DeleteTodo(int id)
+        public async Task<ActionResult> DeleteTodo(int id)
         {
-            var todo = await _context.Todos.FindAsync(id);
-            if (todo == null)
-            {
-                return NotFound();
+            TodoResponse response;
+            try 
+            { 
+                var todo = await _context.Todos.FindAsync(id);
+                if (todo == null)
+                {
+                    response = new TodoResponse
+                    {
+                        Status = HttpStatusCode.NotFound,
+                        Message = "No todo found at the entered Id"
+                    };
+                    return NotFound(response);
+                }
+
+                _context.Todos.Remove(todo);
+                await _context.SaveChangesAsync();
+
+                response = new TodoResponse
+                {
+                    Status = HttpStatusCode.OK,
+                    Message = "Deleted todo successfully",
+                    Response = todo
+                };
+                return Ok(response);
             }
-
-            _context.Todos.Remove(todo);
-            await _context.SaveChangesAsync();
-
-            var response = new TodoResponse
+            catch (Exception ex)
             {
-                Status = HttpStatusCode.OK,
-                Message = "Deleted todo successfully",
-                Response = todo
-            };
-            return response;
+                response = new TodoResponse
+                {
+                    Status = HttpStatusCode.BadRequest,
+                    Message = ex.Message
+                };
+                return BadRequest(response);
+            }
         }
 
         private bool TodoExists(int id)
