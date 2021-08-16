@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TodoAPI.Data;
 using TodoAPI.Models;
+using TodoAPI.Models.DTO;
 
 namespace TodoAPI.Controllers
 {
@@ -101,11 +102,12 @@ namespace TodoAPI.Controllers
         // PUT: api/Todo/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<ActionResult> PutTodo(int id, Todo todo)
+        public async Task<ActionResult> PutTodo(int id, TodoDTO todoDTO)
         {
             TodoResponse response;
             try
             {
+                var todo = DTOToModel(todoDTO, id);
                 _context.Entry(todo).State = EntityState.Modified;
 
                 try
@@ -151,11 +153,12 @@ namespace TodoAPI.Controllers
         // POST: api/Todo
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult> PostTodo(Todo todo)
+        public async Task<ActionResult> PostTodo(TodoDTO todoDTO)
         {
             TodoResponse response;
             try
-            { 
+            {
+                var todo = DTOToModel(todoDTO);
                 _context.Todos.Add(todo);
                 await _context.SaveChangesAsync();
 
@@ -221,6 +224,11 @@ namespace TodoAPI.Controllers
         private bool TodoExists(int id)
         {
             return _context.Todos.Any(e => e.Id == id);
+        }
+
+        private Todo DTOToModel(TodoDTO todo, int id = 0)
+        {
+            return new Todo { Id = id, Name = todo.Name, Completed = todo.Completed };
         }
     }
 }
